@@ -73,19 +73,42 @@ endfunc
 
 
 function! vhdl#snippetParser(snippet)
+  " Process target snippet line by line.
+  " For each line inserts the content after being processed in the cursor
+  " position incrementally.
+  "  
+  " + It accepts the control flow statements if else, for and until.
+  " + Everything else is considered a variable and will be replaced by the
+  "   user input.
+  " --
+  " @param snippet list
+
   if type(snippet) != type([])
     echoerr 'Snippet call failed: snippet should be a list of elements'
   endif
 
   for lne in snippet
-    let m_pos = 0
-    while match(lne, '\$[a-zA-Z][a-zA-Z0-9_\-]+', m_pos)
+    let endpos = 0
+    while match(lne, '\$[a-zA-Z][a-zA-Z0-9_\-]\+', endpos)
       let lne_prev = lne
-      let mdata = matchaddpos(lne, '\$[a-zA-Z][a-zA-Z0-9_\-]+', m_pos)
-      let m_pos = mdata[1]
-      let m_str = mdata[0][2:]
-      call substitute*
-    endif
-    insert lne
+      let [mdata, startpos, endpos] = 
+            \ matchstrpos(lne, '\$[a-zA-Z][a-zA-Z0-9_\-\{\}]+', endpos)
+
+      if mdata[1] == '{'
+        if mdata[2:3] == 'if'
+          call processIf(mdata[2:])
+        elseif mdata[2:4] == 'for'
+          call processFor(mdata[2:])
+        elseif mdata[2:len('until')+2] == 'until'
+          call processUntil(mdata[2:])
+        else
+
+        endif
+      endif
+
+    endwhile
   endfor
+endfunc
+
+function! sniffet#PutSnippet(snip)
 endfunc
